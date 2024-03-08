@@ -13,6 +13,11 @@ app.use(cors({ optionsSuccessStatus: 200 })); // some legacy browsers choke on 2
 // http://expressjs.com/en/starter/static-files.html
 app.use(express.static("public"));
 
+app.use((req, res, next) => {
+  console.log(req.url);
+  next();
+});
+
 // http://expressjs.com/en/starter/basic-routing.html
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/views/index.html");
@@ -25,21 +30,23 @@ app.get("/api/hello", function (req, res) {
 
 app.get("/api/:timestring", (req, res) => {
   if (isNaN(req.params.timestring)) {
-    timestamp = new Date(req.params.timestring);
-    timestamp.setUTCHours(0, 0, 0, 0);
+    if (!isNaN(Date.parse(req.params.timestring))) {
+      timestamp = new Date(req.params.timestring);
+      timestamp.setUTCHours(0, 0, 0, 0);
+    } else {
+      res.json({
+        error: "Invalid Date",
+      });
+    }
   } else {
     timestamp = new Date(Number(req.params.timestring));
   }
-  if (typeof timestamp === "timestamp") {
-    res.json({
-      unix: timestamp.getTime(),
-      utc: timestamp.toUTCString(),
-    });
-  } else {
-    res.json({
-      error: "Invalid Date",
-    });
-  }
+
+  res.json({
+    unix: timestamp.getTime(),
+    utc: timestamp.toUTCString(),
+    type: typeof timestamp,
+  });
 });
 
 // Listen on port set in environment variable or default to 3000
